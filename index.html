@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es-419">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema Centralizado de Monitoreo – ESP32</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema centralizado de monitoreo y generación de alarmas para cadenas de comida rápida basado en ESP32.">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background-color: #f5f5f5; color: #222; line-height: 1.5; }
+    header { background: #0b4f6c; color: #fff; padding: 20px; }
+    header .titulo { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    header h1 { font-size: 1.8rem; margin-bottom: 5px; }
+    header h2 { font-size: 1rem; font-weight: normal; opacity: 0.9; }
+    .logo-marsol-header { max-height: 70px; background: #fff; padding: 6px 10px; border-radius: 8px; }
+
+    nav { background: #083349; }
+    nav ul { list-style: none; display: flex; max-width: 1200px; margin: 0 auto; padding: 10px 0; gap: 20px; flex-wrap: wrap; }
+    nav a { color: #fff; text-decoration: none; font-size: 0.9rem; }
+
+    main { max-width: 1200px; margin: 20px auto; padding: 0 15px 40px; }
+    section { margin-bottom: 40px; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    section h3 { margin-bottom: 10px; font-size: 1.3rem; color: #0b4f6c; border-left: 4px solid #0b4f6c; padding-left: 8px; }
+    section p { margin-bottom: 10px; font-size: 0.95rem; text-align: justify; }
+
+    .equipos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .equipo-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px 15px;
+      background: #f9fafb;
+    }
+    .equipo-card h4 {
+      margin-bottom: 8px;
+      color: #083349;
+    }
+    .variables-equipo {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+    .var-box {
+      flex: 1 1 80px;
+      background: #0b4f6c;
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 8px;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+    .var-box span {
+      display: block;
+      opacity: 0.9;
+    }
+    .var-box strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 1rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #0b4f6c; color: #fff; }
+    tr:nth-child(even) { background: #f5f5f5; }
+
+    .badge { padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; color: #fff; }
+    .alta { background: #c62828; }
+    .media { background: #ef6c00; }
+    .baja  { background: #2e7d32; }
+
+    .fila-critica {
+      background-color: #ffebee !important;
+      color: #b71c1c;
+      font-weight: bold;
+    }
+    .fila-critica td {
+      border-color: #ffcdd2;
+    }
+
+    .foto-autora {
+      max-width: 280px;
+      float: right;
+      margin: 0 0 10px 15px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    .imagen-seccion {
+      width: 100%;
+      max-width: 600px;
+      display: block;
+      margin: 10px auto 15px auto;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    footer { background:#083349; color:#fff; text-align:center; padding:10px; font-size:0.8rem; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="titulo">
+    <div>
+      <h1>Sistema Centralizado de Monitoreo y Alarmas</h1>
+      <h2>ESP32 – Cadenas de comida rápida</h2>
+    </div>
+    <img src="img/logo_marsol.png" class="logo-marsol-header">
+  </div>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#alarmas">Alarmas</a></li>
+    <li><a href="#visitas">Visitas Técnicas</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<section id="dashboard">
+  <h3>Monitoreo en tiempo real por equipo</h3>
+
+  <img src="img/maria_servicio_tecnico.jpg" class="foto-autora">
+
+  <div class="equipos-grid">
+
+    <div class="equipo-card">
+      <h4>Cafetera Melitta – Copec</h4>
+      <div class="variables-equipo">
+        <div class="var-box"><span>Temperatura</span><strong id="caf_temp">-</strong></div>
+        <div class="var-box"><span>Corriente</span><strong id="caf_corriente">-</strong></div>
+        <div class="var-box"><span>Presión</span><strong id="caf_presion">-</strong></div>
+      </div>
+    </div>
+
+    <div class="equipo-card">
+      <h4>Horno Rational – Jumbo</h4>
+      <div class="variables-equipo">
+        <div class="var-box"><span>Temperatura</span><strong id="hor_temp">-</strong></div>
+        <div class="var-box"><span>Corriente</span><strong id="hor_corriente">-</strong></div>
+        <div class="var-box"><span>Presión</span><strong id="hor_presion">-</strong></div>
+      </div>
+    </div>
+
+    <div class="equipo-card">
+      <h4>Lavavajillas – Just Burger</h4>
+      <div class="variables-equipo">
+        <div class="var-box"><span>Temperatura</span><strong id="lav_temp">-</strong></div>
+        <div class="var-box"><span>Corriente</span><strong id="lav_corriente">-</strong></div>
+        <div class="var-box"><span>Presión</span><strong id="lav_presion">-</strong></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="alarmas">
+  <h3>Alarmas del sistema</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Último evento</th>
+        <th>Equipo</th>
+        <th>Variable</th>
+        <th>Error</th>
+        <th>Repeticiones</th>
+        <th>Criticidad</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-alarmas-body"></tbody>
+  </table>
+</section>
+
+<section id="visitas">
+  <h3>Visitas Técnicas Generadas</h3>
+
+  <img src="img/equipo_tecnico_marsol.jpg" class="imagen-seccion">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Equipo</th>
+        <th>Motivo</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-visitas-body"></tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  Sistema de Monitoreo – Trabajo de Título
+</footer>
+
+<script>
+  function numero(min, max) {
+    return (Math.random() * (max - min) + min).toFixed(1);
+  }
+
+  const erroresConfig = [
+    { id:"motor_instantaneo", equipo:"Cafetera Melitta – Copec", variable:"Corriente", descripcion:"Bloqueo en motor del sistema de instantáneo.", repeticiones:0, maxSimulado:8, tieneVisitaCritica:false },
+    { id:"error_embolo_cafetera", equipo:"Cafetera Melitta – Copec", variable:"Presión", descripcion:"Error de émbolo en grupo de café.", repeticiones:0, maxSimulado:3, tieneVisitaCritica:false },
+    { id:"sobretemp_horno", equipo:"Horno Rational – Jumbo", variable:"Temperatura", descripcion:"Sobretemperatura en cámara de cocción.", repeticiones:0, maxSimulado:5, tieneVisitaCritica:false },
+    { id:"falla_bomba_clean_jet", equipo:"Horno Rational – Jumbo", variable:"Bomba Clean Jet", descripcion:"Falla bomba Clean Jet en sistema de lavado.", repeticiones:0, maxSimulado:3, tieneVisitaCritica:false },
+
+    /* AQUÍ EL CAMBIO QUE PEDISTE */
+    { id:"baja_presion_lavavajillas", equipo:"Lavavajillas – Just Burger", variable:"Presión", descripcion:"Presión baja en línea de agua caliente.", repeticiones:0, maxSimulado:1, tieneVisitaCritica:false }
+  ];
+
+  const visitasTecnicas = [];
+
+  function obtenerCriticidad(error) {
+    if (error.repeticiones >= 5) return { texto:"Alta", clase:"alta" };
+    if (error.repeticiones >= 3) return { texto:"Media", clase:"media" };
+    if (error.repeticiones >= 1) return { texto:"Baja", clase:"baja" };
+    return { texto:"Sin eventos", clase:"baja" };
+  }
+
+  function renderizarTablaErrores() {
+    const tbody = document.getElementById("tabla-alarmas-body");
+    tbody.innerHTML = "";
+    erroresConfig.forEach(error => {
+      const crit = obtenerCriticidad(error);
+      const fila = document.createElement("tr");
+      if (error.tieneVisitaCritica) fila.classList.add("fila-critica");
+      fila.innerHTML = `
+        <td>${error.ultimaFecha || "-"}</td>
+        <td>${error.equipo}</td>
+        <td>${error.variable}</td>
+        <td>${error.descripcion}</td>
+        <td>${error.repeticiones}</td>
+        <td><span class="badge ${crit.clase}">${crit.texto}</span></td>
+      `;
+      tbody.appendChild(fila);
+    });
+  }
+
+  function renderizarTablaVisitas() {
+    const tbody = document.getElementById("tabla-visitas-body");
+    tbody.innerHTML = "";
+    visitasTecnicas.forEach(v => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${v.fecha}</td>
+          <td>${v.equipo}</td>
+          <td>${v.motivo}</td>
+          <td>${v.estado}</td>
+        </tr>`;
+    });
+  }
+
+  function generarVisitaTecnica(error) {
+    if (error.id === "baja_presion_lavavajillas") return; // NO debe generar visitas
+
+    const yaExiste = visitasTecnicas.some(v =>
+      v.equipo === error.equipo &&
+      v.motivo.includes(error.descripcion) &&
+      v.estado === "Pendiente"
+    );
+    if (yaExiste) return;
+
+    const fecha = new Date().toISOString().replace("T"," ").slice(0,16);
+
+    visitasTecnicas.push({
+      fecha,
+      equipo:error.equipo,
+      motivo:"Se genera visita de servicio técnico debido a múltiples fallas en: " + error.descripcion,
+      estado:"Pendiente"
+    });
+    error.tieneVisitaCritica = true;
+
+    renderizarTablaVisitas();
+    renderizarTablaErrores();
+  }
+
+  function registrarError(idError) {
+    const error = erroresConfig.find(e => e.id === idError);
+    if (!error) return;
+
+    if (error.repeticiones >= error.maxSimulado) return;
+
+    error.repeticiones++;
+    error.ultimaFecha = new Date().toISOString().replace("T"," ").slice(0,16);
+
+    if (error.repeticiones === 5) generarVisitaTecnica(error);
+
+    renderizarTablaErrores();
+  }
+
+  function simulacionProgresiva() {
+    erroresConfig.forEach(error => {
+      if (error.repeticiones >= error.maxSimulado) return;
+
+      let prob = 0.20;
+      if (error.id === "baja_presion_lavavajillas") prob = 0.04; // BAJA: SOLO 1 REPETICIÓN
+      if (error.id === "error_embolo_cafetera" || error.id === "falla_bomba_clean_jet") prob = 0.12;
+      if (error.id === "motor_instantaneo" || error.id === "sobretemp_horno") prob = 0.25;
+
+      if (Math.random() < prob) registrarError(error.id);
+    });
+  }
+
+  setInterval(simulacionProgresiva, 3000);
+
+  function actualizarMonitoreo() {
+    caf_temp.textContent = numero(80,100)+"°C";
+    caf_corriente.textContent = numero(1.0,4.5)+" A";
+    caf_presion.textContent = numero(2.0,5.0)+" bar";
+
+    hor_temp.textContent = numero(150,260)+"°C";
+    hor_corriente.textContent = numero(2.0,5.0)+" A";
+    hor_presion.textContent = numero(1.0,2.5)+" bar";
+
+    lav_temp.textContent = numero(40,70)+"°C";
+    lav_corriente.textContent = numero(1.0,3.0)+" A";
+    lav_presion.textContent = numero(1.0,3.5)+" bar";
+  }
+
+  setInterval(actualizarMonitoreo, 2000);
+
+  renderizarTablaErrores();
+  renderizarTablaVisitas();
+</script>
+
+</body>
+</html>
