@@ -191,7 +191,7 @@
       <h4>Cafetera Melitta – Copec</h4>
       <div class="variables-equipo">
         <div class="var-box"><span>Temperatura</span><strong id="caf_temp">-</strong></div>
-        <div class="var-box"><span>Corriente</span><strong id="caf_corriente">-</strong></div>
+        <div class="var-box"><span>Caudal volumétrico</span><strong id="caf_caudal">-</strong></div>
         <div class="var-box"><span>Presión</span><strong id="caf_presion">-</strong></div>
       </div>
     </div>
@@ -200,7 +200,7 @@
       <h4>Horno Rational – Jumbo</h4>
       <div class="variables-equipo">
         <div class="var-box"><span>Temperatura</span><strong id="hor_temp">-</strong></div>
-        <div class="var-box"><span>Corriente</span><strong id="hor_corriente">-</strong></div>
+        <div class="var-box"><span>Caudal volumétrico</span><strong id="hor_caudal">-</strong></div>
         <div class="var-box"><span>Presión</span><strong id="hor_presion">-</strong></div>
       </div>
     </div>
@@ -209,7 +209,7 @@
       <h4>Lavavajillas – Just Burger</h4>
       <div class="variables-equipo">
         <div class="var-box"><span>Temperatura</span><strong id="lav_temp">-</strong></div>
-        <div class="var-box"><span>Corriente</span><strong id="lav_corriente">-</strong></div>
+        <div class="var-box"><span>Caudal volumétrico</span><strong id="lav_caudal">-</strong></div>
         <div class="var-box"><span>Presión</span><strong id="lav_presion">-</strong></div>
       </div>
     </div>
@@ -264,7 +264,7 @@
   function numero(min, max) { return (Math.random() * (max - min) + min).toFixed(1); }
 
   const erroresConfig = [
-    { id:"motor_instantaneo", equipo:"Cafetera Melitta – Copec", variable:"Corriente", descripcion:"Bloqueo en motor del sistema de instantáneo.", repeticiones:0, maxSimulado:8, tieneVisitaCritica:false },
+    { id:"falta_caudal_cafetera", equipo:"Cafetera Melitta – Copec", variable:"Caudal volumétrico", descripcion:"Falta de caudal de agua detectada por el flujómetro.", repeticiones:0, maxSimulado:8, tieneVisitaCritica:false },
     { id:"error_embolo_cafetera", equipo:"Cafetera Melitta – Copec", variable:"Presión", descripcion:"Error de émbolo en grupo de café.", repeticiones:0, maxSimulado:3, tieneVisitaCritica:false },
     { id:"sobretemp_horno", equipo:"Horno Rational – Jumbo", variable:"Temperatura", descripcion:"Sobretemperatura en cámara de cocción.", repeticiones:0, maxSimulado:5, tieneVisitaCritica:false },
     { id:"falla_bomba_clean_jet", equipo:"Horno Rational – Jumbo", variable:"Bomba Clean Jet", descripcion:"Falla bomba Clean Jet en sistema de lavado.", repeticiones:0, maxSimulado:3, tieneVisitaCritica:false },
@@ -274,7 +274,7 @@
   const visitasTecnicas = [];
 
   function obtenerCriticidad(error) {
-    if (error.repeticiones >= 5) return { texto:"Alta", clase:"alta" };
+    if (error.repeticiones >= 8) return { texto:"Alta", clase:"alta" };
     if (error.repeticiones >= 3) return { texto:"Media", clase:"media" };
     if (error.repeticiones >= 1) return { texto:"Baja", clase:"baja" };
     return { texto:"Sin eventos", clase:"baja" };
@@ -339,7 +339,7 @@
     error.repeticiones++;
     error.ultimaFecha = new Date().toISOString().replace("T"," ").slice(0,16);
 
-    if (error.repeticiones === 5) generarVisitaTecnica(error);
+    if (error.repeticiones === 8) generarVisitaTecnica(error);
     renderizarTablaErrores();
   }
 
@@ -350,7 +350,7 @@
       let prob = 0.20;
       if (error.id === "baja_presion_lavavajillas") prob = 0.04;
       if (["error_embolo_cafetera","falla_bomba_clean_jet"].includes(error.id)) prob = 0.12;
-      if (["motor_instantaneo","sobretemp_horno"].includes(error.id)) prob = 0.25;
+      if (["falta_caudal_cafetera","sobretemp_horno"].includes(error.id)) prob = 0.25;
 
       if (Math.random() < prob) registrarError(error.id);
     });
@@ -360,15 +360,15 @@
 
   function actualizarMonitoreo() {
     caf_temp.textContent = numero(80,100)+"°C";
-    caf_corriente.textContent = numero(1.0,4.5)+" A";
+    caf_caudal.textContent = numero(0.5,2.5)+" L/min";
     caf_presion.textContent = numero(2.0,5.0)+" bar";
 
     hor_temp.textContent = numero(150,260)+"°C";
-    hor_corriente.textContent = numero(2.0,5.0)+" A";
+    hor_caudal.textContent = numero(0.5,3.0)+" L/min";
     hor_presion.textContent = numero(1.0,2.5)+" bar";
 
     lav_temp.textContent = numero(40,70)+"°C";
-    lav_corriente.textContent = numero(1.0,3.0)+" A";
+    lav_caudal.textContent = numero(1.0,4.0)+" L/min";
     lav_presion.textContent = numero(1.0,3.5)+" bar";
   }
 
@@ -380,6 +380,3 @@
 
 </body>
 </html>
-
-
-
